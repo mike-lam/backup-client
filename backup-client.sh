@@ -156,23 +156,9 @@ create_backups() {
   rm /var/log/backup.log
 }
 
-delete_old_backups() {
-  #delete backup dirs older then $DELETE_MTIME, also keep only last $DELETE_LOG_SIZE lines of delete logs
-  echo "delete_old_backups"
-#  echo "Started delete_old_backups on $(hostname) at $(date)"  2>&1 | tee -a  $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER/crontmp.log
-#  find $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER -mtime +$DELETE_MTIME  2>&1 | tee -a $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER/crontmp.log
-#  find $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER -mtime +$DELETE_MTIME -exec rm -r {} \;
-#  echo "DONE with delete_old_backups at $(date)!"  2>&1 | tee -a $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER/crontmp.log
-#  tail -n $DELETE_LOG_SIZE  $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER/crontmp.log >  $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER/cron.log
-#  rm $DOCKER_ROOT_DIR/volumes/"$STACK_NAMESPACE"_ftp/_data/$FTP_USER/crontmp.log
-}
-
- 
 sleep 1s #$SLEEP_INIT  #give other container some lead time to start running
 while true; do  #loop infinitely to produce backups or delete old backups every $SLEEP time
-  if [ "$NODE_IP" == "$FTP_SERVER" ]; then
-   delete_old_backups
-  else
+  if [ "$NODE_IP" != "$FTP_SERVER" ]; then
     create_backups
   fi
   sleep $SLEEP
