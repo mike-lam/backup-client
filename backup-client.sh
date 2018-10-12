@@ -1,3 +1,4 @@
+#!/bin/bash
 #set -x
 #while true; do  #loop infinitely to produce backups or delete old backups every $SLEEP time
 #  sleep 9999
@@ -16,6 +17,8 @@ TMPDIR=${TMPDIR:-/tmp}
 #DELETE_LOG_SIZE=${DELETE_LOG_SIZE:-10}
 BACKUPDIR=""
 
+echo "DEBUG start" > /var/log/backup.log
+
 #these GLOBAL variables are calculated
 setNODE_HOSTNAME() {
   #assumes the container has volume "/etc:/usr/local/data"
@@ -24,10 +27,12 @@ setNODE_HOSTNAME() {
 }
 setNODE_HOSTNAME
 
+
 setNODE_IP() {
   NODE_IP=$(docker info --format '{{.Swarm.NodeAddr}}')
 }
 setNODE_IP
+
 
 setSTACK_NAMESPACE() {
   STACK_NAMESPACE=$(docker inspect --format '{{index .Config.Labels "com.docker.stack.namespace"}}' $(hostname) 2> /dev/null)
@@ -43,12 +48,13 @@ setGITLAB_SERVICE_NAME() {
 setGITLAB_SERVICE_NAME
 
 #--------------------
+
 setCONTAINERS(){
   #running containers for this namespace on this node
-  CONTAINERS=($(docker ps --filter name="$STACK_NAMESPACE_" -q))
+  CONTAINERS=($(docker ps --filter name="$STACK_NAMESPACE" -q))
 }
 
-setCONTAINER_VOLUMES() { #$1 
+setCONTAINER_VOLUME() { #$1 
   CONTAINER_VOLUMES_destinations=()
   CONTAINER_VOLUMES_names=()
   local ps=$1
