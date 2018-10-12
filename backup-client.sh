@@ -17,8 +17,6 @@ TMPDIR=${TMPDIR:-/tmp}
 #DELETE_LOG_SIZE=${DELETE_LOG_SIZE:-10}
 BACKUPDIR=""
 
-echo "DEBUG start" > /var/log/backup.log
-
 #these GLOBAL variables are calculated
 setNODE_HOSTNAME() {
   #assumes the container has volume "/etc:/usr/local/data"
