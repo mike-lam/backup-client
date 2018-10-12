@@ -4,7 +4,6 @@
 #  echo "delete the loop DEBUG"
 #done
 
-
 # these GLOBAL variables should be set in docker-compose.yml file as environment variables, however default values are provided here which makes testing easier to do.
 #DOCKER_ROOT_DIR=$(docker system info -f '{{.DockerRootDir}}')
 TMPDIR=${TMPDIR:-/tmp}
@@ -85,8 +84,8 @@ backup_gitlab_data_volume() {
   local volumeDest=$3
   local tmpdir=$(mktemp -d $TMPDIR/$volumeName.XXXXXXXXX)
   local  tarfileNew=$TMPDIR/$volumeName.tar
-  echo "  $volumeName.tar"  2>&1 | tee -a /var/log/cron.log  
-  docker exec -t $container gitlab-rake gitlab:backup:create 2>&1 | tee -a /var/log/cron.log #the tee is to duplicate the outs to a file for loggin
+  echo "  $volumeName.tar"  2>&1 | tee -a /var/log/backup.log  
+  docker exec -t $container gitlab-rake gitlab:backup:create 2>&1 | tee -a /var/log/backup.log #the tee is to duplicate the outs to a file for loggin
   docker cp $container:$volumeDest/backups $tmpdir   
   local tmpNames=($(ls -1 $tmpdir/backups|sort -r))
   local tarfile="$tmpdir/backups/${tmpNames[0]}"
@@ -103,7 +102,7 @@ backup_volume() {
   local volumeDest=$3
   local tmpdir=$(mktemp -d $TMPDIR/$volumeName.XXXXXXXXX)
   local tarfile=$TMPDIR/$volumeName.tgz
-  echo "  $(basename $tarfile)"  2>&1 | tee -a /var/log/cron.log
+  echo "  $(basename $tarfile)"  2>&1 | tee -a /var/log/backup.log
   docker cp $container:$volumeDest $tmpdir
   pushd $tmpdir > /dev/null
   tar -czf $tarfile .
@@ -137,7 +136,7 @@ EOT
 create_backups() {
   BACKUPDIR=$NODE_HOSTNAME.$(date +%Y-%m-%d_%H_%M_%S-%Z)
   make_dir_in_ftp
-  echo "Started create_backups on $(hostname) at $(date)"  2>&1 | tee  /var/log/cron.log
+  echo "Started create_backups on $(hostname) at $(date)"  2>&1 | tee  /var/log/backup.log
   setCONTAINERS
   for container in ${CONTAINERS[@]}; do
     setCONTAINER_VOLUMES $container
@@ -152,9 +151,9 @@ create_backups() {
       let c=$c+1
     done
   done
-  echo "DONE with backups at $(date)!"  2>&1 | tee -a /var/log/cron.log  #althought the backups are truly done when the ftp of the log is done, we need to log before we ftp or lose the echo
-  copy_file_to_ftp /var/log/cron.log
-  rm /var/log/cron.log
+  echo "DONE with backups at $(date)!"  2>&1 | tee -a /var/log/backup.log  #althought the backups are truly done when the ftp of the log is done, we need to log before we ftp or lose the echo
+  copy_file_to_ftp /var/log/backup.log
+  rm /var/log/backup.log
 }
 
 delete_old_backups() {
