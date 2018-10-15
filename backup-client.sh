@@ -1,58 +1,40 @@
 #!/bin/bash
-#set -x
-#while true; do  #loop infinitely to produce backups or delete old backups every $SLEEP time
-#  sleep 9999
-#  echo "delete the loop DEBUG"
-#done
 
-# these GLOBAL variables should be set in docker-compose.yml file as environment variables, however default values are provided here which makes testing easier to do.
-#DOCKER_ROOT_DIR=$(docker system info -f '{{.DockerRootDir}}')
+# these GLOBAL variables should be set in docker-compose.yml file as environment variables.
+#FTP_SERVER ip of ftp-server to send backups to
+#FTP_USER userid for ftp loging
+#FTP_PASSWD passwd for ftp loging
+#SLEEP_INIT how long to sleep waiting for containers to fully start
+#SLEEP how long to sleep before taking another backups
+#LOG_SIZE  nbr of lines to keep in backup-client.log
+
+# GLOBAL variables
 TMPDIR=${TMPDIR:-/tmp}
-#FTP_SERVER=${FTP_SERVER:-ubuntu-gitlabstack05}
-#FTP_USER=${FTP_USER:-vmadmin}
-#FTP_PASSWD=${FTP_PASSWD:-Dc5k20a3}
-#SLEEP_INIT=${SLEEP_INIT:-1s}
-#SLEEP=${SLEEP:-10m}
-#DELETE_MTIME=${DELETE_MTIME:-5}
-#DELETE_LOG_SIZE=${DELETE_LOG_SIZE:-10}
 BACKUPDIR=""
 
 #these GLOBAL variables are calculated
 setNODE_HOSTNAME() {
   #assumes the container has volume "/etc:/usr/local/data"
   NODE_HOSTNAME=$(cat /usr/local/data/hostname 2> /dev/null)
-#  NODE_HOSTNAME=${NODE_HOSTNAME:-$(hostname)} #running in test mode with no volume
 }
 setNODE_HOSTNAME
-
 
 setNODE_IP() {
   NODE_IP=$(docker info --format '{{.Swarm.NodeAddr}}')
 }
 setNODE_IP
 
-
 setSTACK_NAMESPACE() {
   STACK_NAMESPACE=$(docker inspect --format '{{index .Config.Labels "com.docker.stack.namespace"}}' $(hostname) 2> /dev/null)
-  if [ "$?" != "0" ]; then
-    STACK_NAMESPACE="gitlabstack" #for testing outside containers 
-  fi
 }
 setSTACK_NAMESPACE
-
-setGITLAB_SERVICE_NAME() {
-  GITLAB_SERVICE_NAME=${GITLAB_SERVICE_NAME:-$STACK_NAMESPACE_gitlab} 
-}
-setGITLAB_SERVICE_NAME
-
-#--------------------
 
 setCONTAINERS(){
   #running containers for this namespace on this node
   CONTAINERS=($(docker ps --filter name="$STACK_NAMESPACE" -q))
 }
 
-setCONTAINER_VOLUME() { #$1 
+setCONTAINER_VOLUMES() { #$1 
   CONTAINER_VOLUMES_destinations=()
   CONTAINER_VOLUMES_names=()
   local ps=$1
@@ -125,8 +107,8 @@ EOT
 }
 
 copy_file_to_ftp() { #dir_file_name
-  dirN=$(dirname $1)
-  fileN=$(basename $1)
+  local dirN=$(dirname $1)
+  local fileN=$(basename $1)
   pushd $dirN > /dev/null
   lftp $FTP_SERVER -u $FTP_USER,$FTP_PASSWD << EOT
     user $FTP_USER $FTP_PASSWD
@@ -140,7 +122,7 @@ EOT
 create_backups() {
   BACKUPDIR=$NODE_HOSTNAME.$(date +%Y-%m-%d_%H_%M_%S-%Z)
   make_dir_in_ftp
-  echo "Started create_backups on $(hostname) at $(date)"  2>&1 | tee  /var/log/backup.log
+  echo "Started create_backups on $NODE_HOSTNAME at $(date)"  2>&1 | tee  /var/log/backup.log
   setCONTAINERS
   for container in ${CONTAINERS[@]}; do
     setCONTAINER_VOLUMES $container
@@ -157,13 +139,30 @@ create_backups() {
   done
   echo "DONE with backups at $(date)!"  2>&1 | tee -a /var/log/backup.log  #althought the backups are truly done when the ftp of the log is done, we need to log before we ftp or lose the echo
   copy_file_to_ftp /var/log/backup.log
+  cat /var/log/backup.log >> /var/log/backup-client.log
   rm /var/log/backup.log
 }
 
-sleep 1s #$SLEEP_INIT  #give other container some lead time to start running
-while true; do  #loop infinitely to produce backups or delete old backups every $SLEEP time
+sleep_until_finish_starting() {
+  local starting=$(docker ps --filter 'health=starting' -q)
+  while [ "$starting" != "" ]; do
+    echo "Some containers are still starting at $(date), sleeping for $SLEEP_INIT"  2>&1 | tee  /var/log/backup.log
+    sleep $SLEEP_INIT
+    starting=$(docker ps --filter 'health=starting' -q)
+  done
+} 
+ 
+keep_only_log_tail() {
+  cp /var/log/backup-client.log /var/log/backup-client.tmp
+  tail -n $LOG_SIZE /var/log/backup-client.tmp > /var/log/backup-client.log
+  rm /var/log/backup-client.tmp
+}
+
+sleep_until_finish_starting
+while true; do  #loop infinitely to produce backups 
   if [ "$NODE_IP" != "$FTP_SERVER" ]; then
     create_backups
   fi
+  keep_only_log_tail
   sleep $SLEEP
 done
