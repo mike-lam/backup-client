@@ -143,26 +143,4 @@ create_backups() {
   rm /var/log/backup.log
 }
 
-sleep_until_finish_starting() {
-  local starting=$(docker ps --filter 'health=starting' -q)
-  while [ "$starting" != "" ]; do
-    echo "Some containers are still starting at $(date), sleeping for $SLEEP_INIT"  2>&1 | tee  /var/log/backup.log
-    sleep $SLEEP_INIT
-    starting=$(docker ps --filter 'health=starting' -q)
-  done
-} 
- 
-keep_only_log_tail() {
-  cp /var/log/backup-client.log /var/log/backup-client.tmp
-  tail -n $LOG_SIZE /var/log/backup-client.tmp > /var/log/backup-client.log
-  rm /var/log/backup-client.tmp
-}
-
-sleep_until_finish_starting
-while true; do  #loop infinitely to produce backups 
-  if [ "$NODE_IP" != "$FTP_SERVER" ]; then
-    create_backups
-  fi
-  keep_only_log_tail
-  sleep $SLEEP
-done
+create_backups
