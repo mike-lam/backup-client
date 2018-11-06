@@ -11,4 +11,4 @@ sleep_until_finish_starting() {
 } 
 
 sleep_until_finish_starting
-/run-one-1.17/run-one ./backup-process.sh
+/run-one-1.17/run-one /usr/local/bin/backup-process.sh
