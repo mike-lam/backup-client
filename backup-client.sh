@@ -33,7 +33,7 @@ keep_only_log_tail() {
 sleep_until_finish_starting
 while true; do  #loop infinitely to produce backups 
   if [ "$NODE_IP" != "$FTP_SERVER" ]; then
-    /run-one-1.17/run-one  /usr/local/bin/backups-process.sh
+    /run-one-1.17/run-one  /usr/local/bin/backup-process.sh
   fi
   keep_only_log_tail
   sleep $SLEEP
