@@ -30,3 +30,7 @@ in the docker-compose-yml use
 
 ```
 
+Thanks to:
+  http://www.debianadmin.com/how-to-sendemail-from-the-command-line-using-a-gmail-account-and-others.html
+  https://github.com/vivekyad4v/docker-cron-sendEmail-shell-scripts
+  
