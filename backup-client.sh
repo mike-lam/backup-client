@@ -36,5 +36,6 @@ while true; do  #loop infinitely to produce backups
     /run-one-1.17/run-one  /usr/local/bin/backup-process.sh
   fi
   keep_only_log_tail
+  /run-one-1.17/run-one  /usr/local/bin/diskusage.sh
   sleep $SLEEP
 done
