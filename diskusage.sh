@@ -11,6 +11,11 @@
 #SMTP_USER gmail user (without @gmail.com) 
 #SMTP_PASS   gmail password
 #LOG_SIZE  nbr of lines to keep in backup-client.log
+#USED_PERCENTAGE_THRESHOLD max disk space used before sending an email 
+#FROM account@domain to use to send the email
+#TO to whom to send emails of low disk space 
+#SMTP_USER account to use to send email
+#SMTP_PASS password to use to send email
 
 #these GLOBAL variables are calculated
 setNODE_HOSTNAME() {
