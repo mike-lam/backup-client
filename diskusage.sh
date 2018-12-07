@@ -39,7 +39,7 @@ setUSED_PERCENTAGE() {
 
 keep_only_log_tail() {
   cp /var/log/diskusage.log /var/log/diskusage.tmp
-  tail -n $LOG_SIZE /var/log/diskusage.tmp >> /var/log/diskusage.log
+  tail -n $LOG_SIZE /var/log/diskusage.tmp > /var/log/diskusage.log
   rm /var/log/diskusage.tmp
 }
 
